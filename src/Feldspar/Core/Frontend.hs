@@ -124,6 +124,7 @@ import Feldspar.Core.Frontend.Mutable          as Frontend
 import Feldspar.Core.Frontend.MutableArray     as Frontend
 import Feldspar.Core.Frontend.MutableReference as Frontend
 import Feldspar.Core.Frontend.MutableToPure    as Frontend
+import Feldspar.Core.Frontend.NCombinators     as Frontend
 import Feldspar.Core.Frontend.NoInline         as Frontend
 import Feldspar.Core.Frontend.Num              as Frontend
 import Feldspar.Core.Frontend.Ord              as Frontend

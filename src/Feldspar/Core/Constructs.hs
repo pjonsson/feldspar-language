@@ -68,6 +68,7 @@ import Feldspar.Core.Constructs.Mutable
 import Feldspar.Core.Constructs.MutableArray
 import Feldspar.Core.Constructs.MutableReference
 import Feldspar.Core.Constructs.MutableToPure
+import Feldspar.Core.Constructs.NCombinators
 import Feldspar.Core.Constructs.NoInline
 import Feldspar.Core.Constructs.Par
 import Feldspar.Core.Constructs.Num
@@ -90,6 +91,7 @@ type FeldSymbols
     :+: (Select     :|| Type)
     :+: (Tuple      :|| Type)
     :+: (Array      :|| Type)
+    :+: (NComb      :|| Type)
     :+: (BITS       :|| Type)
     :+: (COMPLEX    :|| Type)
     :+: (Conversion :|| Type)
