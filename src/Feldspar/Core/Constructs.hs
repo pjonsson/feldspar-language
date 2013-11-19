@@ -70,6 +70,7 @@ import Feldspar.Core.Constructs.MutableReference
 import Feldspar.Core.Constructs.MutableToPure
 import Feldspar.Core.Constructs.NoInline
 import Feldspar.Core.Constructs.Par
+import Feldspar.Core.Constructs.ParFor
 import Feldspar.Core.Constructs.Num
 import Feldspar.Core.Constructs.Ord
 import Feldspar.Core.Constructs.Save
@@ -118,7 +119,9 @@ type FeldSymbols
     :+: MutableReference
     :+: MutableToPure
     :+: MONAD Par
+    :+: MONAD ParFor
     :+: ParFeature
+    :+: ParForFeat
     :+: Empty
 
 -- TODO We are currently a bit inconsistent in that `Type` constraints are sometimes attached

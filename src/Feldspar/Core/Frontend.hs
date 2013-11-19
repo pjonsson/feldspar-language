@@ -128,6 +128,7 @@ import Feldspar.Core.Frontend.NoInline         as Frontend
 import Feldspar.Core.Frontend.Num              as Frontend
 import Feldspar.Core.Frontend.Ord              as Frontend
 import Feldspar.Core.Frontend.Par              as Frontend
+import Feldspar.Core.Frontend.ParFor           as Frontend
 import Feldspar.Core.Frontend.Save             as Frontend
 import Feldspar.Core.Frontend.SizeProp         as Frontend
 import Feldspar.Core.Frontend.SourceInfo       as Frontend

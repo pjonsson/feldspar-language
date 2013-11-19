@@ -44,7 +44,6 @@
 module Feldspar.Core.Types where
 
 
-
 import Data.Array.IO
 import Data.Bits
 import Data.Complex
@@ -55,13 +54,14 @@ import Data.Typeable (Typeable, Typeable1)
 import Data.Word
 import Test.QuickCheck
 import qualified Control.Monad.Par as MonadPar
+import qualified Control.Monad.Writer as MW
 
 import Data.Patch
 import Data.Proxy
+import Data.Monoid (Monoid(..))
 
 import Feldspar.Lattice
 import Feldspar.Range
-
 
 
 --------------------------------------------------------------------------------
@@ -299,6 +299,37 @@ instance MonadType Par
     voidTypeRep = ParType UnitType
 
 --------------------------------------------------------------------------------
+-- * ParFor Monad
+--------------------------------------------------------------------------------
+
+newtype ParFor a = ParFor { unParFor :: MW.Writer [(Index, a)] () }
+
+deriving instance Typeable1 ParFor
+
+instance Show (ParFor a)
+  where
+    show _ = "Parfor"
+
+instance Eq (ParFor a)
+  where
+    _ == _ = False
+
+instance Monad ParFor
+  where
+    (>>=) = (MW.>>=)
+    return = MW.return
+
+instance Monoid a => MW.MonadWriter a ParFor
+  where
+    tell = MW.tell
+    listen = MW.listen
+    pass = MW.pass
+
+instance MonadType ParFor
+  where
+    voidTypeRep = ParForType UnitType
+
+--------------------------------------------------------------------------------
 -- * Future values
 --------------------------------------------------------------------------------
 
@@ -344,6 +375,7 @@ data TypeRep a
     RefType       :: TypeRep a -> TypeRep (IORef a)
     MArrType      :: TypeRep a -> TypeRep (MArr a)
     ParType       :: TypeRep a -> TypeRep (Par a)
+    ParForType    :: TypeRep a -> TypeRep (ParFor a)
     IVarType      :: TypeRep a -> TypeRep (IV a)
     FValType      :: TypeRep a -> TypeRep (FVal a)
       -- TODO `MArrType` Should have a target-specialized version. Or perhaps
@@ -370,6 +402,7 @@ instance Show (TypeRep a)
     show (MutType ta)                    = unwords ["Mut", show ta]
     show (RefType ta)                    = unwords ["Ref", show ta]
     show (MArrType ta)                   = unwords ["MArr", show ta]
+    show (ParForType ta)                 = unwords ["ParFor", show ta]
     show (ParType ta)                    = unwords ["Par", show ta]
     show (IVarType ta)                   = unwords ["IVar", show ta]
     show (FValType ta)                   = unwords ["FVal", show ta]
@@ -432,6 +465,7 @@ defaultSize (MutType ta) = defaultSize ta
 defaultSize (RefType ta) = defaultSize ta
 defaultSize (MArrType ta) = universal :> defaultSize ta
 defaultSize (ParType ta) = defaultSize ta
+defaultSize (ParForType ta) = defaultSize ta
 defaultSize (IVarType ta) = defaultSize ta
 defaultSize (FValType ta) = defaultSize ta
 
@@ -525,6 +559,9 @@ typeEq (MArrType a1) (MArrType a2) = do
 typeEq (ParType t1) (ParType t2) = do
     TypeEq <- typeEq t1 t2
     return TypeEq
+typeEq (ParForType t1) (ParForType t2) = do
+    TypeEq <- typeEq t1 t2
+    return TypeEq
 typeEq (IVarType t1) (IVarType t2) = do
     TypeEq <- typeEq t1 t2
     return TypeEq
@@ -564,6 +601,7 @@ type instance TargetType n (IORef a)       = IORef (TargetType n a)
 type instance TargetType n (MArr a)        = MArr (TargetType n a)
 type instance TargetType n (IV a)          = IV (TargetType n a)
 type instance TargetType n (FVal a)        = FVal (TargetType n a)
+type instance TargetType n (ParFor a)      = ParFor (TargetType n a)
 
 -- | The set of supported types
 class (Eq a, Show a, Typeable a, Show (Size a), Lattice (Size a)) => Type a
@@ -738,6 +776,15 @@ instance Type a => Type (IV a)
 
     toTarget = error "toTarget: IVar" -- TODO Requires IO
 
+instance Type a => Type (ParFor a)
+  where
+    typeRep = ParForType typeRep
+
+    sizeOf _ = universal
+
+    toTarget = error "toTarget: ParFor" -- TODO
+
+
 instance Type a => Type (FVal a)
   where
     typeRep = FValType typeRep
@@ -812,6 +859,7 @@ type instance Size (Mut a)         = Size a
 type instance Size (IORef a)       = Size a
 type instance Size (MArr a)        = Range Length :> Size a
 type instance Size (Par a)         = Size a
+type instance Size (ParFor a)      = Size a
 type instance Size (IV a)          = Size a
 type instance Size (FVal a)        = Size a
 
