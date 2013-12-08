@@ -28,30 +28,28 @@
 --
 
 module Feldspar.ParFor
-  ( PF
-  , runPPar
+  ( runPPar
+  , pFor
   , putP
   , combP
   )
 where
 
-import Language.Syntactic (sugarSymC)
-
-import Feldspar.Core.Constructs (Syntax())
+import Feldspar.Core.Constructs (sugarSymF)
 import Feldspar.Core.Constructs.ParFor
 import Feldspar.Core.Frontend.ParFor
 
 import Feldspar
 
-runPPar :: (Type a, Syntax a) => PF (Data a) -> Data [a]
-runPPar = sugarSymC PParRun
+runPPar :: Type a => Data Length -> Data (ParFor a) -> Data [a]
+runPPar = sugarSymF PParRun
 
--- newP :: Syntax a => PF (IVar a)
--- newP = sugarSymC PParNew
+pFor :: Type a => Data Length -> (Data Index -> Data Index) -> (Data Index -> Data (ParFor a)) -> Data (ParFor a)
+pFor = sugarSymF PParFor
 
-putP :: Syntax a => Data Index -> a -> PF a
-putP = sugarSymC PParPut
+putP :: Type a => Data Index -> Data a -> Data (ParFor a)
+putP = sugarSymF PParPut
 
-combP :: Syntax a => PF a -> PF a -> PF a
-combP = sugarSymC PParComb
+combP :: Type a => Data (ParFor a) -> Data (ParFor a) -> Data (ParFor a)
+combP = sugarSymF PParComb
 

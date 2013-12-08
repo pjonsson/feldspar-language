@@ -54,7 +54,6 @@ import Data.Typeable (Typeable, Typeable1)
 import Data.Word
 import Test.QuickCheck
 import qualified Control.Monad.Par as MonadPar
-import qualified Control.Monad.Writer as MW
 
 import Data.Patch
 import Data.Proxy
@@ -302,32 +301,17 @@ instance MonadType Par
 -- * ParFor Monad
 --------------------------------------------------------------------------------
 
-newtype ParFor a = ParFor { unParFor :: MW.Writer [(Index, a)] () }
+newtype ParFor a = ParFor { unParFor :: [(Index, a)] }
 
 deriving instance Typeable1 ParFor
 
-instance Show (ParFor a)
+instance Show a => Show (ParFor a)
   where
-    show _ = "Parfor"
+    show (ParFor a) = "ParFor " ++ show a
 
-instance Eq (ParFor a)
+instance Eq a => Eq (ParFor a)
   where
-    _ == _ = False
-
-instance Monad ParFor
-  where
-    (>>=) = (MW.>>=)
-    return = MW.return
-
-instance Monoid a => MW.MonadWriter a ParFor
-  where
-    tell = MW.tell
-    listen = MW.listen
-    pass = MW.pass
-
-instance MonadType ParFor
-  where
-    voidTypeRep = ParForType UnitType
+    (ParFor xs) == (ParFor ys) = xs == ys
 
 --------------------------------------------------------------------------------
 -- * Future values
@@ -465,7 +449,7 @@ defaultSize (MutType ta) = defaultSize ta
 defaultSize (RefType ta) = defaultSize ta
 defaultSize (MArrType ta) = universal :> defaultSize ta
 defaultSize (ParType ta) = defaultSize ta
-defaultSize (ParForType ta) = defaultSize ta
+defaultSize (ParForType ta) = universal :> defaultSize ta
 defaultSize (IVarType ta) = defaultSize ta
 defaultSize (FValType ta) = defaultSize ta
 
@@ -859,7 +843,7 @@ type instance Size (Mut a)         = Size a
 type instance Size (IORef a)       = Size a
 type instance Size (MArr a)        = Range Length :> Size a
 type instance Size (Par a)         = Size a
-type instance Size (ParFor a)      = Size a
+type instance Size (ParFor a)      = Range Length :> Size a
 type instance Size (IV a)          = Size a
 type instance Size (FVal a)        = Size a
 

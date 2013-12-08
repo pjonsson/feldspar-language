@@ -37,19 +37,15 @@
 
 module Feldspar.Core.Frontend.ParFor where
 
-import Language.Syntactic hiding (P)
-import Language.Syntactic.Frontend.Monad (Mon(..))
+import Language.Syntactic
 
 import Feldspar.Core.Types
 import Feldspar.Core.Constructs
 
-newtype PF a = PF { unPF :: Mon FeldDomain ParFor a }
-  deriving (Functor, Monad)
-
-instance Syntax a => Syntactic (PF a)
+instance Syntax a => Syntactic (ParFor a)
   where
-    type Domain (PF a)   = FeldDomain
-    type Internal (PF a) = ParFor (Internal a)
-    desugar = desugar . unPF
-    sugar   = PF . sugar
+    type Domain (ParFor a)   = FeldDomain
+    type Internal (ParFor a) = ParFor (Internal a)
+    desugar = desugar
+    sugar   = sugar
 

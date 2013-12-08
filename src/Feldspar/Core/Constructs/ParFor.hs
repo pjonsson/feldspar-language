@@ -37,6 +37,7 @@
 
 module Feldspar.Core.Constructs.ParFor where
 
+import Data.List
 import Control.Monad.Writer
 import Data.Array.IArray
 import Data.Array.MArray (freeze)
@@ -58,21 +59,22 @@ import Data.Typeable (gcast)
 
 data ParForFeat a
   where
-    PParRun    :: Type a => ParForFeat (ParFor a :-> Full [a])
---    PParNew    :: Type a => ParForFeat (Full (ParFor (IV a)))
+    PParRun    :: Type a => ParForFeat (Length :-> ParFor a :-> Full [a])
+    PParFor    :: Type a => ParForFeat (Length :-> (Index -> Index) :-> (Index -> ParFor a) :-> Full (ParFor a))
     PParPut    :: Type a => ParForFeat (Index :-> a :-> Full (ParFor a))
     PParComb   :: Type a => ParForFeat (ParFor a :-> ParFor a :-> Full (ParFor a))
 
 instance Semantic ParForFeat
   where
-    semantics PParRun    = Sem "runPar" runParF
-    semantics PParPut    = Sem "put" (\i e -> do
-                                                tell [(i, e)]
-                                                return e)
-    semantics PParComb   = Sem "||" (>>)
+    semantics PParRun    = Sem "runPar" (\l (ParFor p) -> map snd p)
+    semantics PParFor    = Sem "pFor" pParFor
+    semantics PParPut    = Sem "put" (\i e -> ParFor [(i, e)])
+    semantics PParComb   = Sem "||" (\(ParFor l) (ParFor r) -> ParFor (l ++ r))
 
-runParF :: ParFor a -> [a] -- Wrong, but passes type checker!
-runParF e = map snd . execWriter . unParFor $ e
+
+pParFor :: Length -> (Index -> Index) -> (Index -> ParFor a) -> ParFor a
+pParFor len step ixf = ParFor $ concatMap (\(ParFor vs) -> vs) xs
+      where xs = genericTake len $ map ixf $ iterate step 1
 
 {-runMutableArrayEval :: forall a . Mut (MArr a) -> [a]
 runMutableArrayEval m = unsafePerformIO $
@@ -92,97 +94,21 @@ instance AlphaEq dom dom dom env => AlphaEq ParForFeat ParForFeat dom env
   where
     alphaEqSym = alphaEqSymDefault
 
-instance Sharable (MONAD ParFor)
-
-instance SizeProp ParForFeat
+instance SizeProp (ParForFeat :|| Type)
   where
-    sizeProp PParRun   (WrapFull a :* Nil) = universal -- infoSize a
-    sizeProp PParPut   _                   = universal
-    sizeProp PParComb  _                   = universal
+    sizeProp (C' PParRun)   (WrapFull len :* WrapFull arr :* Nil) = infoSize arr
+    sizeProp (C' PParFor)   _                   = universal
+    sizeProp (C' PParPut)   _                   = universal
+    sizeProp (C' PParComb)  (WrapFull p1 :* WrapFull p2 :* Nil) = universal -- TODO: p1 U p1
 
-instance ( MONAD ParFor :<: dom
-         , ParForFeat :<: dom
+instance ( (ParForFeat :|| Type) :<: dom
          , Optimize dom dom
          )
-      => Optimize ParForFeat dom
+      => Optimize (ParForFeat :|| Type) dom
   where
-    constructFeatUnOpt opts PParRun args   = constructFeatUnOptDefault opts PParRun args
+    constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
+{-    constructFeatUnOpt opts PParRun args   = constructFeatUnOptDefault opts PParRun args
 --    constructFeatUnOpt opts PParNew args   = constructFeatUnOptDefaultTyp opts (ParForType $ IVarType typeRep) PParNew args
     constructFeatUnOpt opts PParPut args   = constructFeatUnOptDefaultTyp opts (ParForType typeRep) PParPut args
     constructFeatUnOpt opts PParComb args  = constructFeatUnOptDefaultTyp opts (ParForType typeRep) PParComb args
-
-
-monadProxy :: P ParFor
-monadProxy = P
-
-instance SizeProp (MONAD ParFor)
-  where
-    sizeProp Return (WrapFull a :* Nil)      = infoSize a
-    sizeProp Bind   (_ :* WrapFull f :* Nil) = snd $ infoSize f
-    sizeProp Then   (_ :* WrapFull b :* Nil) = infoSize b
-    sizeProp When   _                        = AnySize
-
-instance ( MONAD ParFor :<: dom
-         , (Variable :|| Type) :<: dom
-         , CLambda Type :<: dom
-         , Let :<: dom
-         , OptimizeSuper dom
-         )
-      => Optimize (MONAD ParFor) dom
-  where
-    optimizeFeat opts bnd@Bind (ma :* f :* Nil) = do
-        ma' <- optimizeM opts ma
-        case getInfo ma' of
-          Info (ParForType ty) sz vs src -> do
-            f' <- optimizeFunction opts (optimizeM opts) (Info ty sz vs src) f
-            case getInfo f' of
-              Info{} -> constructFeat opts bnd (ma' :* f' :* Nil)
-
-    optimizeFeat opts a args = optimizeFeatDefault opts a args
-
-    constructFeatOpt _ Bind (ma :* (lam :$ (ret :$ var)) :* Nil)
-      | Just (SubConstr2 (Lambda v1)) <- prjLambda lam
-      , Just Return                   <- prjMonad monadProxy ret
-      , Just (C' (Variable v2))       <- prjF var
-      , v1 == v2
-      , Just ma' <- gcast ma
-      = return ma'
-
-    constructFeatOpt opts Bind (ma :* (lam :$ body) :* Nil)
-        | Just (SubConstr2 (Lambda v)) <- prjLambda lam
-        , v `notMember` vars
-        = constructFeat opts Then (ma :* body :* Nil)
-      where
-        vars = infoVars $ getInfo body
-
-      -- return x >> mb ==> mb
-    constructFeatOpt _ Then ((ret :$ _) :* mb :* Nil)
-        | Just Return <- prjMonad monadProxy ret
-        = return mb
-
-      -- ma >> return () ==> ma
-    constructFeatOpt _ Then (ma :* (ret :$ u) :* Nil)
-        | Just Return <- prjMonad monadProxy ret
-        , Just TypeEq <- typeEq (infoType $ getInfo ma)  (ParForType UnitType)
-        , Just TypeEq <- typeEq (infoType $ getInfo ret) (ParForType UnitType)
-        , Just ()     <- viewLiteral u
-        = return ma
-
-    constructFeatOpt opts a args = constructFeatUnOpt opts a args
-
-    constructFeatUnOpt opts Return args@(a :* Nil)
-        | Info {infoType = t} <- getInfo a
-        = constructFeatUnOptDefaultTyp opts (ParForType t) Return args
-
-    constructFeatUnOpt opts Bind args@(_ :* (lam :$ body) :* Nil)
-        | Just (SubConstr2 (Lambda _))  <- prjLambda lam
-        , Info {infoType = t} <- getInfo body
-        = constructFeatUnOptDefaultTyp opts t Bind args
-
-    constructFeatUnOpt opts Then args@(_ :* mb :* Nil)
-        | Info {infoType = t} <- getInfo mb
-        = constructFeatUnOptDefaultTyp opts t Then args
-
-    constructFeatUnOpt opts When args =
-        constructFeatUnOptDefaultTyp opts voidTypeRep When args
-
+-}

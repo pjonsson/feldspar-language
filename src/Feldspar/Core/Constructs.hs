@@ -119,9 +119,8 @@ type FeldSymbols
     :+: MutableReference
     :+: MutableToPure
     :+: MONAD Par
-    :+: MONAD ParFor
     :+: ParFeature
-    :+: ParForFeat
+    :+: (ParForFeat :|| Type)
     :+: Empty
 
 -- TODO We are currently a bit inconsistent in that `Type` constraints are sometimes attached
