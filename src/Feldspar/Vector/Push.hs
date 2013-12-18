@@ -1,9 +1,9 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-
 --
 -- Copyright (c) 2009-2011, ERICSSON AB
 -- All rights reserved.
@@ -37,12 +37,15 @@ module Feldspar.Vector.Push where
 import qualified Prelude
 
 import Feldspar hiding (sugar,desugar)
+import qualified Feldspar as F
 import qualified Feldspar.Vector as V
 
-import Language.Syntactic (Syntactic(..))
+import qualified Language.Syntactic (Syntactic(..))
+
+import Feldspar.ParFor
 
 data PushVector a where
-  Push :: ((Data Index -> a -> M ()) -> M ()) -> Data Length -> PushVector a
+  Push :: (forall b.Type b => (Data Index -> a -> Data (ParFor b)) -> Data (ParFor b)) -> Data Length -> PushVector a
 
 type PushVector1 a = PushVector (Data a)
 
@@ -50,26 +53,27 @@ instance Syntax a => Syntactic (PushVector a)
   where
     type Domain (PushVector a)   = FeldDomain
     type Internal (PushVector a) = [Internal a]
-    desugar = desugar . freezePush
-    sugar   = thawPush . sugar
+    desugar = F.resugar . freezePush
+    sugar   = thawPush . F.resugar
 
 -- | Store push vectors in memory.
 freezePush :: Syntax a => PushVector a -> Data [Internal a]
-freezePush (Push _ 0) = parallel 0 $ Prelude.error "freezePush: indexing empty array"
-freezePush (Push k l) = runMutableArray $ do
-                          arr <- newArr_ l
-                          k (\i a -> setArr arr i (resugar a))
-                          return arr
+freezePush = freezePushData . fmap F.desugar
+
+freezePushData :: Type a => PushVector1 a -> Data [a]
+freezePushData (Push _ 0) = parallel 0 $ \i -> Prelude.error "freezePush: indexing empty array"
+freezePushData (Push k l) = runPPar l (k putP)
 
 -- | Store a push vector to memory and return it as an ordinary vector.
 freezeToVector :: Syntax a => PushVector a -> V.Vector a
 freezeToVector = V.map resugar . V.thawVector . freezePush
 
 -- | Create a push vector from an array stored in memory.
+thawPushData :: Type a => Data [a] -> PushVector1 a
+thawPushData arr = Push (\k -> pFor (getLength arr) (\i -> i + 1) (\i -> k i (arr ! i))) (getLength arr)
+
 thawPush :: Syntax a => Data [Internal a] -> PushVector a
-thawPush arr = Push f (getLength arr)
-  where f k = forM (getLength arr) $ \ix ->
-                k ix (resugar (arr ! ix))
+thawPush = fmap F.sugar . thawPushData
 
 -- | Any kind of vector, push or pull, can cheaply be converted to a push vector
 class Pushy arr where
@@ -79,14 +83,14 @@ instance Pushy PushVector where
   toPush = id
 
 instance Pushy V.Vector where
-  toPush vec = Push (\k -> forM (length vec) (\i -> k i (vec!i))) (length vec)
+  toPush vec = Push (\k -> pFor (length vec) (\i -> i + 1) (\i -> k i (vec!i))) (length vec)
 
 instance Functor PushVector where
   fmap f (Push g l) = Push (\k -> g (\i a -> k i (f a))) l
 
 -- | Concatenating two arrays.
 (++) :: (Pushy arr1, Pushy arr2, Syntax a) => arr1 a -> arr2 a -> PushVector a
-v1 ++ v2 = Push (\func -> f func >>
+v1 ++ v2 = Push (\func -> f func `combP`
                           g (\i a -> func (l1 + i) a))
                 (l1 + l2)
   where
@@ -99,15 +103,15 @@ unpair :: (Pushy arr, Syntax a) => arr (a,a) -> PushVector a
 unpair = unpairWith everyOther
 
 unpairWith :: (Pushy arr, Syntax a)
-           => ((Data Index -> a -> M ()) -> Data Index -> (a,a) -> M ())
+           => (forall b. Type b => (Data Index -> a -> Data (ParFor b)) -> Data Index -> (a,a) -> Data (ParFor b))
            -> arr (a,a) -> PushVector a
 unpairWith spread arr = Push (f . spread) (2*l)
   where
     Push f l = toPush arr
 
-everyOther :: (Data Index -> a -> M b)
-           -> Data Index -> (a,a) -> M b
-everyOther f = \ix (a1,a2) -> f (ix * 2) a1 >> f (ix * 2 + 1) a2
+everyOther :: Type b => ((Data Index -> a -> Data (ParFor b)))
+           -> Data Index -> (a,a) -> Data (ParFor b)
+everyOther f = \ix (a1,a2) ->  f (ix * 2) a1 `combP`  f (ix * 2 + 1) a2
 
 -- | Interleaves the elements of two vectors.
 zipUnpair :: Syntax a => V.Vector a -> V.Vector a -> PushVector a
@@ -151,7 +155,7 @@ instance Len V.Vector where
 
 instance Len PushVector where
   length (Push _ l) = l
-
+{-
 -- | This function can distribute array computations on chunks of a large
 --   pull vector. A call `chunk l f g v` will split the vector `v` into chunks
 --   of size `l` and apply `f` to these chunks. In case the length of `v` is
@@ -169,7 +173,9 @@ chunk c f g v = Push loop (noc * c)
         loop func = forM noc $ \i ->
                       do let (Push k _) = toPush $ f (V.take c (V.drop (c*i) v))
                          k (\j a -> func (c*i + j) a)
-
+-}
+scanl = undefined
+{-
 -- | `scanl` is similar to `fold`, but returns a `PushVector` of successive
 -- reduced values from the left.
 scanl :: (Syntax a, Syntax b)
@@ -199,3 +205,4 @@ flatten v = Push f len
                       n <- getRef l
                       g (\j a -> k (n + j) a)
                       setRef l (n+m)
+-}

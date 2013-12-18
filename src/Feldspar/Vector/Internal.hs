@@ -46,6 +46,7 @@ import Language.Syntactic hiding (fold)
 import Feldspar.Range (rangeSubSat)
 import qualified Feldspar
 import Feldspar hiding (sugar,desugar,resugar)
+import Feldspar.ParFor
 
 import Data.Tuple.Curry
 import Data.Tuple.Select
@@ -122,7 +123,7 @@ mergeSegments vec = Indexed (length vec) (ixFun (segments vec)) Empty
 -- | Converts a non-nested vector to a core vector.
 freezeVector :: Type a => Vector (Data a) -> Data [a]
 freezeVector Empty                = value []
-freezeVector (Indexed l ixf cont) = parallel l ixf `append` freezeVector cont
+freezeVector (Indexed l ixf cont) = (runPPar l $ pFor l (\i -> i + 1) $ \i -> putP i (ixf i)) `append` freezeVector cont
 
 -- | Converts a non-nested core array to a vector.
 thawVector :: Type a => Data [a] -> Vector (Data a)

@@ -74,7 +74,7 @@ instance Semantic ParForFeat
 
 pParFor :: Length -> (Index -> Index) -> (Index -> ParFor a) -> ParFor a
 pParFor len step ixf = ParFor $ concatMap (\(ParFor vs) -> vs) xs
-      where xs = genericTake len $ map ixf $ iterate step 1
+      where xs = genericTake len $ map ixf $ iterate step 0
 
 {-runMutableArrayEval :: forall a . Mut (MArr a) -> [a]
 runMutableArrayEval m = unsafePerformIO $
