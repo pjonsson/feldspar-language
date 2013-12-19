@@ -61,6 +61,7 @@ library
     Feldspar.Core.Constructs.MutableToPure
     Feldspar.Core.Constructs.NoInline
     Feldspar.Core.Constructs.Par
+    Feldspar.Core.Constructs.ParFor
     Feldspar.Core.Constructs.Num
     Feldspar.Core.Constructs.Ord
     Feldspar.Core.Constructs.SizeProp
@@ -93,6 +94,7 @@ library
     Feldspar.Core.Frontend.MutableToPure
     Feldspar.Core.Frontend.NoInline
     Feldspar.Core.Frontend.Par
+    Feldspar.Core.Frontend.ParFor
     Feldspar.Core.Frontend.Num
     Feldspar.Core.Frontend.Ord
     Feldspar.Core.Frontend.SizeProp
@@ -112,6 +114,7 @@ library
     Feldspar.Matrix
     Feldspar.Memoize
     Feldspar.Option
+    Feldspar.ParFor
     Feldspar.Repa
     Feldspar.Stream
     Feldspar.Vector.Internal
