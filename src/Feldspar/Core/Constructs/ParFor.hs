@@ -2,6 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -83,16 +84,15 @@ runMutableArrayEval m = unsafePerformIO $
                            return (elems (iarr :: Array WordN a))
 -}
 
-instance Equality ParForFeat where equal = equalDefault; exprHash = exprHashDefault
-instance Render   ParForFeat where renderArgs = renderArgsDefault
-instance ToTree   ParForFeat
-instance Eval     ParForFeat where evaluate = evaluateDefault
+semanticInstances ''ParForFeat
+
 instance EvalBind ParForFeat where evalBindSym = evalBindSymDefault
-instance Sharable ParForFeat
 
 instance AlphaEq dom dom dom env => AlphaEq ParForFeat ParForFeat dom env
   where
     alphaEqSym = alphaEqSymDefault
+
+instance Sharable ParForFeat
 
 instance SizeProp (ParForFeat :|| Type)
   where
