@@ -6,7 +6,9 @@ description:    Feldspar (Functional Embedded Language for DSP and PARallelism)
                 algorithms. This package contains the language front-end and an
                 interpreter.
 category:       Language
-copyright:      Copyright (c) 2012 Emil Axelsson, Gergely Dévai,
+copyright:      Copyright (c) 2013 Emil Axelsson, Peter Jonsson,
+                                   Anders Persson, Josef Svenningsson
+                Copyright (c) 2012 Emil Axelsson, Gergely Dévai,
                                    Anders Persson, Josef Svenningsson
                 Copyright (c) 2009-2011, ERICSSON AB
 author:         Functional programming group at Chalmers University of Technology
@@ -130,7 +132,7 @@ library
     mtl                         >= 2.0    && < 2.2,
     QuickCheck                  >= 2.5    && < 3,
     patch-combinators           >= 0.2    && < 0.3,
-    syntactic                   >= 1.8    && < 1.9,
+    syntactic                   >= 1.9    && < 1.10,
     tagged                      >= 0.4    && < 0.8,
     tuple                       >= 0.2    && < 0.3,
     monad-par                   >= 0.3    && < 0.3.4
@@ -174,8 +176,8 @@ test-suite range
     base             >= 4   && < 4.7,
     random           >= 1   && < 2,
     QuickCheck       >= 2.4 && < 3,
-    tasty            >= 0.3 && < 0.4,
-    tasty-quickcheck >= 0.2 && < 0.4
+    tasty            >= 0.3 && < 0.6,
+    tasty-quickcheck >= 0.2 && < 0.5
 
 test-suite semantics
   type: exitcode-stdio-1.0
@@ -194,9 +196,9 @@ test-suite semantics
     feldspar-language,
     base             >= 4   && < 4.7,
     QuickCheck       >= 2.4 && < 3,
-    tasty            >= 0.3 && < 0.4,
+    tasty            >= 0.3 && < 0.6,
     tasty-th         >= 0.1 && < 0.2,
-    tasty-quickcheck >= 0.2 && < 0.4
+    tasty-quickcheck >= 0.2 && < 0.5
 
 test-suite decoration
   type: exitcode-stdio-1.0
@@ -211,8 +213,8 @@ test-suite decoration
     feldspar-language,
     base                  >= 4   && < 4.7,
     bytestring            >= 0.9 && < 0.11,
-    tasty                 >= 0.3 && < 0.4,
-    tasty-golden          >= 2.0 && < 2.2
+    tasty                 >= 0.3 && < 0.6,
+    tasty-golden          >= 2.0 && < 3
 
 test-suite tutorial
   type: exitcode-stdio-1.0
