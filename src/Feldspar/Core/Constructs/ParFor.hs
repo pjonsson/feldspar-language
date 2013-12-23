@@ -94,15 +94,22 @@ instance AlphaEq dom dom dom env => AlphaEq ParForFeat ParForFeat dom env
 
 instance Sharable ParForFeat
 
+instance Typed ParForFeat
+  where
+    typeDictSym PParRun = Just Dict
+    typeDictSym PParFor = Just Dict
+    typeDictSym PParPut = Just Dict
+    typeDictSym PParComb = Just Dict
+
 instance SizeProp (ParForFeat :|| Type)
   where
     sizeProp (C' PParRun)   (WrapFull len :* WrapFull arr :* Nil) = infoSize arr
     sizeProp (C' PParFor)   _                   = universal
     sizeProp (C' PParPut)   _                   = universal
-    sizeProp (C' PParComb)  (WrapFull p1 :* WrapFull p2 :* Nil) = universal -- TODO: p1 U p1
+    sizeProp (C' PParComb)  (WrapFull p1 :* WrapFull p2 :* Nil) = universal -- TODO: p1 U p2
 
 instance ( (ParForFeat :|| Type) :<: dom
-         , Optimize dom dom
+         , OptimizeSuper dom
          )
       => Optimize (ParForFeat :|| Type) dom
   where

@@ -41,7 +41,7 @@ import Language.Syntactic
 
 import Feldspar.Core.Types
 import Feldspar.Core.Constructs
-
+{-
 instance Syntax a => Syntactic (ParFor a)
   where
     type Domain (ParFor a)   = FeldDomain
@@ -49,3 +49,4 @@ instance Syntax a => Syntactic (ParFor a)
     desugar = desugar
     sugar   = sugar
 
+-}
