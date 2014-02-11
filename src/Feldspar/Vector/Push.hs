@@ -174,7 +174,7 @@ chunk c f g v = Push loop (noc * c)
                       do let (Push k _) = toPush $ f (V.take c (V.drop (c*i) v))
                          k (\j a -> func (c*i + j) a)
 -}
-scanl = undefined
+
 {-
 -- | `scanl` is similar to `fold`, but returns a `PushVector` of successive
 -- reduced values from the left.
@@ -199,10 +199,7 @@ empty = Push (const (return ())) 0
 flatten :: Syntax a => V.Vector (PushVector a) -> PushVector a
 flatten v = Push f len
   where len = V.sum (V.map length v)
-        f k = do l <- newRef 0
-                 forM (length v) $ \i ->
-                   do let (Push g m) = v ! i
-                      n <- getRef l
-                      g (\j a -> k (n + j) a)
-                      setRef l (n+m)
+        f k = pRed len 0 (\i -> i + length (v ! i)) $ \ix s ->
+                   let (Push g m) = v ! ix in
+                   g (\j a -> k (ix + j) a)
 -}

@@ -62,6 +62,7 @@ data ParForFeat a
   where
     PParRun    :: Type a => ParForFeat (Length :-> ParFor a :-> Full [a])
     PParFor    :: Type a => ParForFeat (Length :-> (Index -> Index) :-> (Index -> ParFor a) :-> Full (ParFor a))
+    PParRed    :: Type a => ParForFeat (Length :-> a :-> (Index -> a -> a) :-> Full (ParFor a))
     PParPut    :: Type a => ParForFeat (Index :-> a :-> Full (ParFor a))
     PParComb   :: Type a => ParForFeat (ParFor a :-> ParFor a :-> Full (ParFor a))
 
@@ -69,6 +70,7 @@ instance Semantic ParForFeat
   where
     semantics PParRun    = Sem "runPar" (\l (ParFor p) -> map snd p)
     semantics PParFor    = Sem "pFor" pParFor
+    semantics PParRed    = Sem "pRed" pParRed
     semantics PParPut    = Sem "put" (\i e -> ParFor [(i, e)])
     semantics PParComb   = Sem "||" (\(ParFor l) (ParFor r) -> ParFor (l ++ r))
 
@@ -76,6 +78,11 @@ instance Semantic ParForFeat
 pParFor :: Length -> (Index -> Index) -> (Index -> ParFor a) -> ParFor a
 pParFor len step ixf = ParFor $ concatMap (\(ParFor vs) -> vs) xs
       where xs = genericTake len $ map ixf $ iterate step 0
+
+pParRed :: Length -> a -> (Index -> a -> a) -> ParFor a
+pParRed len s0 ixf = undefined -- ParFor $ concatMap (\(ParFor vs) -> vs) xs
+--      where xs = genericDrop 1 $ scanl (\st (ParFor [(_, e)]) -> ixf e st) s0 $ map (\i -> ParFor [(i,i)]) [1..(len+3)]
+
 
 {-runMutableArrayEval :: forall a . Mut (MArr a) -> [a]
 runMutableArrayEval m = unsafePerformIO $
@@ -98,6 +105,7 @@ instance Typed ParForFeat
   where
     typeDictSym PParRun = Just Dict
     typeDictSym PParFor = Just Dict
+    typeDictSym PParRed = Just Dict
     typeDictSym PParPut = Just Dict
     typeDictSym PParComb = Just Dict
 
@@ -105,6 +113,7 @@ instance SizeProp (ParForFeat :|| Type)
   where
     sizeProp (C' PParRun)   (WrapFull len :* WrapFull arr :* Nil) = infoSize arr
     sizeProp (C' PParFor)   _                   = universal
+    sizeProp (C' PParRed)   _                   = universal
     sizeProp (C' PParPut)   _                   = universal
     sizeProp (C' PParComb)  (WrapFull p1 :* WrapFull p2 :* Nil) = universal -- TODO: p1 U p2
 

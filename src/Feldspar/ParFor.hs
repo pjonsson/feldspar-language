@@ -30,6 +30,7 @@
 module Feldspar.ParFor
   ( runPPar
   , pFor
+  , pRed
   , putP
   , combP
   )
@@ -46,6 +47,9 @@ runPPar = sugarSymF PParRun
 
 pFor :: Type a => Data Length -> (Data Index -> Data Index) -> (Data Index -> Data (ParFor a)) -> Data (ParFor a)
 pFor = sugarSymF PParFor
+
+pRed :: Type a => Data Length -> Data a -> (Data Index -> Data a -> Data a) -> Data (ParFor a)
+pRed = sugarSymF PParRed
 
 putP :: Type a => Data Index -> Data a -> Data (ParFor a)
 putP = sugarSymF PParPut
