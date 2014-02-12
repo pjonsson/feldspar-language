@@ -77,6 +77,7 @@ import Feldspar.Core.Constructs.Save
 import Feldspar.Core.Constructs.Switch
 import Feldspar.Core.Constructs.SizeProp
 import Feldspar.Core.Constructs.SourceInfo
+import Feldspar.Core.Constructs.RealFloat
 import Feldspar.Core.Constructs.Trace
 import Feldspar.Core.Constructs.Tuple
 
@@ -98,6 +99,7 @@ type FeldSymbols
     :+: (EQ         :|| Type)
     :+: (Error      :|| Type)
     :+: (FLOATING   :|| Type)
+    :+: (REALFLOAT  :|| Type)
     :+: (FRACTIONAL :|| Type)
     :+: (FUTURE     :|| Type)
     :+: (INTEGRAL   :|| Type)
