@@ -44,6 +44,8 @@ import qualified Data.Array.IO as IO
 import Data.Bits
 import Data.Int
 import Data.Word
+import Data.Fixed hiding (Fixed)
+import qualified Data.Fixed as F
 import Data.Default
 import Data.Hash
 import qualified Test.QuickCheck as Q
@@ -119,6 +121,107 @@ type family UnsignedRep a where
   UnsignedRep Word64 = Word64
   UnsignedRep WordN  = Word32
   UnsignedRep IntN   = Word32
+  UnsignedRep Fixed = Word16
+
+-- | Convenience alias for fixed point numbers
+type BoundedFixed a = (Ord a, Bounded a, Integral a)
+
+-- | Target-dependent short fixed.
+newtype ShortFixed = ShortFixed (F.Fixed E2)
+  deriving
+    ( Eq, Ord, Num, Enum, Real, RealFrac, Fractional
+    , Q.Arbitrary, NFData
+    )
+-- | Target-dependent unsigned short fixed.
+newtype UShortFixed = UShortFixed (F.Fixed E2)
+  deriving
+    ( Eq, Ord, Num, Enum, Real, RealFrac, Fractional
+    , Q.Arbitrary, NFData
+    )
+-- | Target-dependent fixed.
+newtype Fixed = Fixed (F.Fixed E3)
+  deriving
+    ( Eq, Ord, Num, Enum, Real, RealFrac, Fractional
+    , Q.Arbitrary, NFData
+    )
+-- | Target-dependent unsigned fixed.
+newtype UFixed = UFixed (F.Fixed E3)
+  deriving
+    ( Eq, Ord, Num, Enum, Real, RealFrac, Fractional
+    , Q.Arbitrary, NFData
+    )
+-- | Target-dependent long fixed.
+newtype LongFixed = LongFixed (F.Fixed E6)
+  deriving
+    ( Eq, Ord, Num, Enum, Real, RealFrac, Fractional
+    , Q.Arbitrary, NFData
+    )
+-- | Target-dependent unsigned long fixed.
+newtype ULongFixed = ULongFixed (F.Fixed E6)
+  deriving
+    ( Eq, Ord, Num, Enum, Real, RealFrac, Fractional
+    , Q.Arbitrary, NFData
+    )
+-- | Target-dependent accum.
+newtype Accum = Accum (F.Fixed E9)
+  deriving
+    ( Eq, Ord, Num, Enum, Real, RealFrac, Fractional
+    , Q.Arbitrary, NFData
+    )
+-- | Target-dependent unsigned accum.
+newtype UAccum = UAccum (F.Fixed E9)
+  deriving
+    ( Eq, Ord, Num, Enum, Real, RealFrac, Fractional
+    , Q.Arbitrary, NFData
+    )
+-- | Target-dependent long accum.
+newtype LongAccum = LongAccum (F.Fixed E12)
+  deriving
+    ( Eq, Ord, Num, Enum, Real, RealFrac, Fractional
+    , Q.Arbitrary, NFData
+    )
+-- | Target-dependent unsigned long accum.
+newtype ULongAccum = ULongAccum (F.Fixed E12)
+  deriving
+    ( Eq, Ord, Num, Enum, Real, RealFrac, Fractional
+    , Q.Arbitrary, NFData
+    )
+
+instance Bits Fixed where
+  isSigned _ = True
+  _ .&. _ = error "Bits Fixed..&.: not implemented."
+  _ .|. _ = error "Bits Fixed..|.: not implemented."
+  complement _ = error "Bits Fixed.complement: not implemented."
+  shift _ _ = error "Bits Fixed.shift: not implemented."
+  rotate _ _ = error "Bits Fixed.rotate: not implemented."
+  bitSize _ = error "Bits Fixed.bitSize: not implemented."
+  bitSizeMaybe _ = error "Bits Fixed.bitSizeMaybe: not implemented."
+  testBit _ _ = error "Bits Fixed.testBit: not implemented."
+  bit _ = error "Bits Fixed.bit: not implemented."
+  popCount _ = error "Bits Fixed.popCount: not implemented."
+  xor _ = error "Bits Fixed.xor: not implemented."
+
+instance FiniteBits Fixed where
+  finiteBitSize _ = finiteBitSize (undefined :: Int16)
+
+instance Show Fixed where
+  show (Fixed a) = show a
+
+instance Hashable Fixed where
+  hash (Fixed (MkFixed n)) = hash n
+
+instance Bounded Fixed where
+  minBound = fromIntegral (minBound :: Int16)
+  maxBound = fromIntegral (maxBound :: Int16)
+
+instance Integral Fixed where
+  quot (Fixed (MkFixed n1)) (Fixed (MkFixed n2)) = fromIntegral (quot n1 n2)
+  quotRem (Fixed (MkFixed n1)) (Fixed (MkFixed n2))
+    = (fromIntegral a, fromIntegral b)
+     where (a, b) = quotRem n1 n2
+  toInteger (Fixed (MkFixed n)) = toInteger n
+
+
 
 -- | Convert an 'Integral' to its unsigned representation while preserving
 -- bit width

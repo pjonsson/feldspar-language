@@ -377,6 +377,7 @@ class Type a => Eq a
 
 instance Eq ()
 instance Eq Bool
+instance Eq Fixed
 instance Eq Float
 instance Eq Double
 instance Eq Word8
@@ -524,6 +525,7 @@ class (Fractional a, Numeric a) => Fraction a
     divFrac :: Data a -> Data a -> Data a
     divFrac = sugarSym2 DivFrac
 
+instance Fraction Fixed
 instance Fraction Float
 instance Fraction Double
 
@@ -870,6 +872,7 @@ instance Numeric Int32
 instance Numeric Int64
 instance Numeric IntN
 
+instance Numeric Fixed
 instance Numeric Float
 instance Numeric Double
 
@@ -923,8 +926,10 @@ instance Ord Word64
 instance Ord Int64
 instance Ord WordN
 instance Ord IntN
+instance Ord Fixed
 instance Ord Float
 instance Ord Double
+
 --------------------------------------------------
 -- Par.hs
 --------------------------------------------------

@@ -337,11 +337,11 @@ instance Hashable (T.TypeRep a) where
   hash T.UnitType                   = hashInt 1
   hash T.BoolType                   = hashInt 2
   hash (T.IntType sgn sz)           = hashInt 3 # sgn # sz
-  hash T.FloatType                  = hashInt 4
-  hash T.DoubleType                 = hashInt 5
-  hash (T.ComplexType t)            = hashInt 6 # t
-  hash (T.ArrayType t)              = hashInt 7 # t
-  -- Index 8 available.
+  hash (T.FixedType sgn sz)         = hashInt 4 # sgn # sz
+  hash T.FloatType                  = hashInt 5
+  hash T.DoubleType                 = hashInt 6
+  hash (T.ComplexType t)            = hashInt 7 # t
+  hash (T.ArrayType t)              = hashInt 8 # t
   hash (T.Tup2Type a b)             = hashInt 9 # a # b
   hash (T.Tup3Type a b c)           = hashInt 10 # a # b # c
   hash (T.Tup4Type a b c d)         = hashInt 11 # a # b # c # d
@@ -369,11 +369,11 @@ instance Hashable (T.TypeRep a) where
   hash (T.MArrType t)     = hashInt 26 # t
   hash (T.ParType t)      = hashInt 27 # t
   hash (T.ElementsType t) = hashInt 28 # t
-  hash (T.ConsType a b)   = hashInt 31 # a # b
-  hash  T.NilType         = hashInt 32
-  hash (T.TupleType t)    = hashInt 33 # t
-  hash (T.IVarType t)     = hashInt 29 # t
-  hash (T.FValType t)     = hashInt 30 # t
+  hash (T.ConsType a b)   = hashInt 29 # a # b
+  hash  T.NilType         = hashInt 30
+  hash (T.TupleType t)    = hashInt 31 # t
+  hash (T.IVarType t)     = hashInt 32 # t
+  hash (T.FValType t)     = hashInt 33 # t
 
 appHash, absHash :: VarId
 appHash = 655360 + 40960 + 2560 + 160 + 10 + 17

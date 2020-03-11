@@ -170,6 +170,7 @@ data ScalarType =
      BoolType
    | BitType
    | IntType Signedness Size
+   | FixedType Signedness Size Size
    | FloatType
    | DoubleType
    | ComplexType Type
@@ -209,6 +210,7 @@ instance Show Var where
 data Lit =
      LBool Bool
    | LInt Signedness Size Integer
+   | LFixed Signedness Size Size Integer Integer
    | LFloat Float
    | LDouble Double
    | LComplex Lit Lit
@@ -232,6 +234,8 @@ literalVI (LInt sgn sz n) = go sgn sz
         go Unsigned  S40 = singletonVI (fromInteger n :: Word64)
         go Unsigned  S64 = singletonVI (fromInteger n :: Word64)
         go Unsigned S128 = error "UntypedRepresentation.literalVI: not supported"
+
+literalVI  LFixed{}   =  VIFixed fullRange
 literalVI (LFloat  x) = singletonVI x
 literalVI (LDouble x) = singletonVI x
 literalVI (LComplex re im) = VIProd [literalVI re, literalVI im]
@@ -243,6 +247,7 @@ botInfoST :: ScalarType -> ValueInfo
 botInfoST BoolType         = boolBot
 botInfoST BitType          = VIWord8 $ Range 1 0 -- Provisionally
 botInfoST (IntType sgn sz) = constantIntRange sgn sz emptyRange
+botInfoST FixedType{}      = VIFixed fullRange
 botInfoST FloatType        = VIFloat
 botInfoST DoubleType       = VIDouble
 botInfoST (ComplexType t)  = VIProd [botInfo t, botInfo t]
@@ -267,6 +272,7 @@ topInfoST :: ScalarType -> ValueInfo
 topInfoST BoolType         = boolTop
 topInfoST BitType          = VIWord8 $ Range 0 1 -- Provisionally
 topInfoST (IntType sgn sz) = constantIntRange sgn sz fullRange
+topInfoST FixedType{}      = VIFixed fullRange
 topInfoST FloatType        = VIFloat
 topInfoST DoubleType       = VIDouble
 topInfoST (ComplexType t)  = VIProd [topInfo t, topInfo t]
@@ -299,6 +305,7 @@ prettyVI t (VIWord16 r) = show r
 prettyVI t (VIWord32 r) = show r
 prettyVI t (VIWord64 r) = show r
 prettyVI t (VIWordN r)  = show r
+prettyVI t (VIFixed r)  = show r
 prettyVI t (VIFloat)    = "[*,*]"
 prettyVI t (VIDouble)   = "[*,*]"
 prettyVI t (VIProd vs)  = pr t vs
@@ -331,6 +338,7 @@ constantIntRange Unsigned S64 r = VIWord64 r
 instance Show Lit where
    show (LBool b)                    = show b
    show (LInt _ _ i)                 = show i
+   show (LFixed _ _ _ i d)           = show i ++ "." ++ show d
    show (LFloat f)                   = show f
    show (LDouble d)                  = show d
    show (LComplex r c)               = "(" ++ show r ++ ", " ++ show c ++ "i)"
@@ -661,6 +669,7 @@ instance HasType Var where
 instance HasType Lit where
     type TypeOf Lit       = Type
     typeof (LInt s n _)   = 1 :# IntType s n
+    typeof (LFixed s m f _ _) = 1 :# FixedType s m f
     typeof LDouble{}      = 1 :# DoubleType
     typeof LFloat{}       = 1 :# FloatType
     typeof LBool{}        = 1 :# BoolType

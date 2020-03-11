@@ -258,6 +258,7 @@ unwrap (AIn r e) = e
 -- | Is this a literal zero.
 zero :: AUntypedFeld a -> Bool
 zero (AIn _ (Literal (LInt    _ _ 0))) = True
+zero (AIn _ (Literal (LFixed _ _ _ 0 0))) = True
 zero (AIn _ (Literal (LFloat      0))) = True
 zero (AIn _ (Literal (LDouble     0))) = True
 zero _                                 = False
@@ -265,6 +266,7 @@ zero _                                 = False
 -- | Is this a literal one.
 one :: AUntypedFeld a -> Bool
 one (AIn _ (Literal (LInt    _ _ 1))) = True
+one (AIn _ (Literal (LFixed _ _ _ 1 0))) = True
 one (AIn _ (Literal (LFloat      1))) = True
 one (AIn _ (Literal (LDouble     1))) = True
 one _                                 = False

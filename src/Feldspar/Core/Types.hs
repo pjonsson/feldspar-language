@@ -43,7 +43,6 @@ module Feldspar.Core.Types
        , tuple, Tuple(), RTuple(..), TSelect(..), sel, Skip(..), First(..), (:*), TNil -- From NestedTuples
        ) where
 
-
 import Data.Array.IO (IOArray(..))
 import Data.Bits
 import Data.Complex
@@ -53,7 +52,7 @@ import Data.List
 import Data.Typeable (Typeable)
 import Data.Orphans
 import Data.Word
-import Test.QuickCheck
+import Test.QuickCheck hiding (Fixed)
 import System.Random (Random(..))
 import qualified Control.Monad.Par as MonadPar
 
@@ -63,7 +62,6 @@ import Data.Proxy
 import Feldspar.Lattice
 import Feldspar.Range
 import Feldspar.Core.NestedTuples
-
 
 --------------------------------------------------------------------------------
 -- * Heterogenous lists
@@ -146,6 +144,21 @@ type family GenericInt s n where
 
 type Length = WordN
 type Index  = WordN
+
+-- | A generalization of unsigned and signed fixed point numbers. The first
+-- parameter represents the signedness and the sectond parameter the number
+-- of bits.
+type family GenericFixed s n where
+  GenericFixed U N8      = UShortFixed
+  GenericFixed S N8      = ShortFixed
+  GenericFixed U N16     = UFixed
+  GenericFixed S N16     = Fixed
+  GenericFixed U N32     = ULongFixed
+  GenericFixed S N32     = LongFixed
+  GenericFixed U N64     = UAccum
+  GenericFixed S N64     = Accum
+  GenericFixed U NNative = ULongAccum
+  GenericFixed S NNative = LongAccum
 
 --------------------------------------------------------------------------------
 -- * Monadic Types
@@ -246,6 +259,9 @@ data TypeRep a
                      , Size (GenericInt s n) ~ Range (GenericInt s n)
                      ) =>
                        Signedness s -> BitWidth n -> TypeRep (GenericInt s n)
+    FixedType     :: ( BoundedFixed (GenericFixed s n)
+                     , Size (GenericFixed s n) ~ Range (GenericFixed s n))
+                    => Signedness s -> BitWidth n -> TypeRep (GenericFixed s n)
     FloatType     :: TypeRep Float
     DoubleType    :: TypeRep Double
     ComplexType   :: RealFloat a => TypeRep a -> TypeRep (Complex a)
@@ -284,6 +300,7 @@ instance Show (TypeRep a)
     show UnitType            = "()"
     show BoolType            = "Bool"
     show (IntType s n)       = signedness s ++ bitWidth n
+    show (FixedType s n)     = signedness s ++ bitWidth n
     show FloatType           = "Float"
     show DoubleType          = "Double"
     show (ComplexType t)     = "(Complex " ++ show t ++ ")"
@@ -322,7 +339,8 @@ data TypeEq a b
 defaultSize :: TypeRep a -> Size a
 defaultSize UnitType = universal
 defaultSize BoolType = universal
-defaultSize (IntType _ _) = universal
+defaultSize IntType{} = universal
+defaultSize FixedType{} = universal
 defaultSize FloatType = universal
 defaultSize DoubleType = universal
 defaultSize (ComplexType _) = universal
@@ -500,6 +518,10 @@ typeEq :: TypeRep a -> TypeRep b -> Maybe (TypeEq a b)
 typeEq UnitType UnitType = Just TypeEq
 typeEq BoolType BoolType = Just TypeEq
 typeEq (IntType s1 n1) (IntType s2 n2) = do
+    TypeEq <- signEq s1 s2
+    TypeEq <- widthEq n1 n2
+    return TypeEq
+typeEq (FixedType s1 n1) (FixedType s2 n2) = do
     TypeEq <- signEq s1 s2
     TypeEq <- widthEq n1 n2
     return TypeEq
@@ -715,6 +737,7 @@ instance Type Word64  where typeRep = IntType U N64;     sizeOf = singletonRange
 instance Type Int64   where typeRep = IntType S N64;     sizeOf = singletonRange
 instance Type WordN   where typeRep = IntType U NNative; sizeOf = singletonRange
 instance Type IntN    where typeRep = IntType S NNative; sizeOf = singletonRange
+instance Type Fixed   where typeRep = FixedType S N16;   sizeOf = singletonRange
 instance Type Float   where typeRep = FloatType;         sizeOf _ = AnySize
 instance Type Double  where typeRep = DoubleType;        sizeOf _ = AnySize
 
@@ -1047,6 +1070,7 @@ type family Size a where
   Size Int64           = Range Int64
   Size WordN           = Range WordN
   Size IntN            = Range IntN
+  Size Fixed           = Range Fixed
   Size Float           = AnySize
   Size Double          = AnySize
   Size (Complex a)     = AnySize
@@ -1076,7 +1100,6 @@ type family Size a where
   Size (Tuple a)       = Size (RTuple a)
   Size (IV a)          = Size a
   Size (FVal a)        = Size a
-
 
 tIntN :: Patch IntN IntN
 tIntN = id

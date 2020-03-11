@@ -61,6 +61,7 @@ data ValueInfo = VIBool   (Range Int) -- ^ We represent False as 0 and True as 1
                | VIWord32 (Range Word32)
                | VIWord64 (Range Word64)
                | VIWordN  (Range WordN)
+               | VIFixed  (Range Fixed)
                | VIFloat  -- (Range Float)
                | VIDouble -- (Range Double)
                | VIProd [ValueInfo]
@@ -78,6 +79,7 @@ instance Show ValueInfo where
   show (VIWord32 r) = "VIWord32 " ++ show r
   show (VIWord64 r) = "VIWord64 " ++ show r
   show (VIWordN r)  = "VIWordN " ++ show r
+  show (VIFixed _)   = "VIFixed"
   show (VIFloat)    = "VIFloat"
   show (VIDouble)   = "VIDouble"
   show (VIProd vs)  = "VIProd " ++ show vs
@@ -118,6 +120,9 @@ instance RangeVI Word64 where
 
 instance RangeVI WordN where
   rangeVI l h = VIWordN $ Range l h
+
+instance RangeVI Fixed where
+  rangeVI l h = VIFixed $ Range l h
 
 instance RangeVI Float where
   rangeVI l h = VIFloat
@@ -162,6 +167,7 @@ bop op (VIWord64 r1) (VIWord64 r2) = VIWord64  (op r1 r2)
 bop op (VIInt64 r1)  (VIInt64 r2)  = VIInt64   (op r1 r2)
 bop op (VIWordN r1)  (VIWordN r2)  = VIWordN   (op r1 r2)
 bop op (VIIntN r1)   (VIIntN r2)   = VIIntN    (op r1 r2)
+bop op (VIFixed r1)  (VIFixed r2)  = VIFixed   (op r1 r2)
 bop _  (VIFloat)     (VIFloat)     = VIFloat
 bop _  (VIDouble)    (VIDouble)    = VIDouble
 bop op (VIProd l1)   (VIProd l2)   = VIProd    (zipWith (bop op) l1 l2)
@@ -180,6 +186,7 @@ uop op (VIWord64 r)               = VIWord64  (op r)
 uop op (VIInt64 r)                = VIInt64   (op r)
 uop op (VIWordN r)                = VIWordN   (op r)
 uop op (VIIntN r)                 = VIIntN    (op r)
+uop op (VIFixed r)                = VIFixed   (op r)
 uop _  (VIFloat)                  = VIFloat
 uop _  (VIDouble)                 = VIDouble
 uop op (VIProd l)                 = VIProd    (map (uop op) l)
