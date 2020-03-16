@@ -47,7 +47,7 @@ import qualified Data.Map as M (empty)
 look :: Typeable a => BindEnv -> Var a -> AExpr a
 look vm v = lookupBE "SizeProp.look" vm v
 
-extend :: TypeF a => BindEnv -> Var a -> Info a -> BindEnv
+extend :: Type a => BindEnv -> Var a -> Info a -> BindEnv
 extend vm v info = extendBE vm $ CBind v $ info :& Variable v
 
 sizeProp :: Typeable a => AExpr a -> AExpr a

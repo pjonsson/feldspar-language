@@ -50,12 +50,12 @@ import Feldspar.Core.UntypedRepresentation (AUntypedFeld, stringTreeExp, stringT
 import qualified Feldspar.Core.UntypedRepresentation as U
 import Feldspar.Core.Reify
 import Feldspar.Core.Representation (CBind(..))
-import Feldspar.Core.Types (TypeF)
+import Feldspar.Core.Types (Type)
 import Feldspar.Core.Middleend.FromTyped (untypeUnOpt, untypeDecor)
 import Feldspar.Core.Interpretation (defaultFeldOpts)
 import Feldspar.ValueInfo (ValueInfo)
 
-stringTreeASTF :: TypeF a => ASTF a -> Tree String
+stringTreeASTF :: Type a => ASTF a -> Tree String
 stringTreeASTF = U.stringTree . untypeUnOpt defaultFeldOpts
 
 {-
@@ -69,24 +69,24 @@ class StringTree (a :: * -> *) where
 -- Copied from Langage.Syntactic.Interpretation.Render
 
 -- | Show a syntax tree using ASCII art
-showAST :: TypeF a => ASTF a -> String
+showAST :: Type a => ASTF a -> String
 showAST = showTree . stringTreeASTF
 {-# INLINABLE showAST #-}
 
 -- | Print a syntax tree using ASCII art
-drawAST :: TypeF a => ASTF a -> IO ()
+drawAST :: Type a => ASTF a -> IO ()
 drawAST = putStrLn . showAST
 {-# INLINABLE drawAST #-}
 
-writeHtmlAST :: TypeF a => FilePath -> ASTF a -> IO ()
+writeHtmlAST :: Type a => FilePath -> ASTF a -> IO ()
 writeHtmlAST file = writeHtmlTree Nothing file
                   . fmap (\n -> NodeInfo InitiallyExpanded n "")
                   . stringTreeASTF
 {-# INLINABLE writeHtmlAST #-}
 
-showDecorWith :: TypeF a => (ValueInfo -> String) -> ASTF a -> String
+showDecorWith :: Type a => (ValueInfo -> String) -> ASTF a -> String
 showDecorWith f = showTree . stringTreeExp g . untypeDecor defaultFeldOpts
   where g x = " in " ++ f x
 
-drawDecorWith :: TypeF a => (ValueInfo -> String) -> ASTF a -> IO ()
+drawDecorWith :: Type a => (ValueInfo -> String) -> ASTF a -> IO ()
 drawDecorWith f = putStrLn . showDecorWith f

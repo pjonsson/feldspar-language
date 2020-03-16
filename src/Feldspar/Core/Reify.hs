@@ -88,18 +88,18 @@ alphaEq :: T.Type a => ASTF a -> ASTF a -> Bool
 alphaEq (ASTF (ml,el) _) (ASTF (mr,er) _) = error $ "alphaEq not supported (binding time violation)"
 
 -- | Convert an ASTF to an expression
-unASTF :: TypeF a => b -> ASTF a -> (AExpr a)
+unASTF :: T.Type a => b -> ASTF a -> (AExpr a)
 unASTF _ (ASTF ce _) = fromCExp ce
 
 -- | Evaluate an ASTF
-evalBind :: TypeF a => ASTF a -> a
+evalBind :: T.Type a => ASTF a -> a
 evalBind = evalTop . unASTF ()
 
-render :: TypeF a => ASTF a -> String
+render :: T.Type a => ASTF a -> String
 render (ASTF (m,e) _) = unwords $ show e : "where" : map rendb (map snd $ M.toList m)
   where rendb (CBind v e) = show v ++ " = " ++ show e
 
-instance TypeF a => Show (ASTF a) where
+instance T.Type a => Show (ASTF a) where
   show = render
 
 class Syntactic a where
@@ -145,16 +145,16 @@ type CSEMap = M.Map VarId CBind
 type CSEExpr e = (CSEMap, e)
 type CExpr a = CSEExpr (AExpr a)
 
-flattenCSE :: ExprCtx a => CExpr a -> CExpr a
+flattenCSE :: T.Type a => CExpr a -> CExpr a
 flattenCSE (m,e) | not $ sharable e = (m, e)
 flattenCSE (m,e) = mergeMapCExpr (M.singleton (varNum v) (CBind v e)) (m, aeInfo e :& Variable v)
    where v = Var (hashExpr e) B.empty
 
-applyCSE :: ExprCtx a => CSEExpr (Expr (a -> b)) -> CSEExpr (AExpr a) -> CSEExpr (Expr b)
+applyCSE :: T.Type a => CSEExpr (Expr (a -> b)) -> CSEExpr (AExpr a) -> CSEExpr (Expr b)
 applyCSE (lm,f) (rm,e) = (m, f :@ e1)
    where (m,e1) = mergeMapCExpr lm (rm,e)
 
-mergeMapCExpr :: ExprCtx a => CSEMap -> CExpr a -> CExpr a
+mergeMapCExpr :: T.Type a => CSEMap -> CExpr a -> CExpr a
 mergeMapCExpr lm (rm,e) = (M.union lm rm1, e1)
    where sect = M.intersectionWith (,) lm rm
          (rm1,e1) = if null colls then (rm,e) else catchBindings (map fst colls) (rm,e)
@@ -166,7 +166,7 @@ transCSEExpr f (m,e) = (m, f e)
 toCExpr :: e -> CSEExpr e
 toCExpr e = (M.empty, e)
 
-fromCExp :: ExprCtx a => CExpr a -> AExpr a
+fromCExp :: T.Type a => CExpr a -> AExpr a
 fromCExp (m,e) = mkLets (bs, e)
   where (_,bs) = floatBindings [] m
 
@@ -207,7 +207,7 @@ depthBind arr (CBind v e) = (varNum v, maximum (0 : map (hashLook arr) (S.toList
 
 bindThreshold = 1000000
 
-catchBindings :: ExprCtx a => [VarId] -> CExpr a -> CExpr a
+catchBindings :: T.Type a => [VarId] -> CExpr a -> CExpr a
 catchBindings vs (m,e) = (m1, mkLets (bs,e))
   where (m1,bs) = floatBindings vs m
 

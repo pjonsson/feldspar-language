@@ -1362,7 +1362,7 @@ instance ( Syntax a, Syntax b, Syntax c, Syntax d
 -- Functions
 -------------------------------------------------
 
-instance (Type (Internal a), TypeF (Internal b), Syntactic a, Syntactic b) => Syntactic (a -> b) where
+instance (Type (Internal a), Type (Internal b), TypeF (Internal b), Syntactic a, Syntactic b) => Syntactic (a -> b) where
   type Internal (a -> b) = Internal a -> Internal b
   sugar e = undefined
   desugar f = ASTF func (i+1)
@@ -1427,13 +1427,13 @@ instance ( Syntactic a
 -- Support functions
 -------------------------------------------------
 -- | Convert a CSE map, an Expr and an Int to an ASTF
-full :: TypeF b => (CSEExpr (Expr b), Int) -> ASTF b
+full :: Type b => (CSEExpr (Expr b), Int) -> ASTF b
 full (ce, i) = ASTF (flattenCSE $ transCSEExpr toAExpr ce) i
 
 infixl 5 @@
 
 -- Construct an application
-(@@) :: (Syntactic a, TypeF (Internal a), TypeF b)
+(@@) :: (Syntactic a, Type (Internal a), Type b)
      => (CSEExpr (Expr (Internal a -> b)), Int) -> a -> (CSEExpr (Expr b), Int)
 (cf,i) @@ e = go $ desugar e
   where go (ASTF ce j) = (applyCSE cf ce, P.max i j)
@@ -1467,11 +1467,11 @@ class SugarF a where
   type SugarT a
   sugarF :: (RCSExpr (SugarT a), Int) -> a
 
-instance (Syntactic b, TypeF (Internal b), TypeF (SugarT c), SugarF c) => SugarF (b -> c) where
+instance (Syntactic b, Type (Internal b), TypeF (Internal b), Type (SugarT c),  TypeF (SugarT c), SugarF c) => SugarF (b -> c) where
   type SugarT (b -> c) = Internal b -> SugarT c
   sugarF f = \ e -> sugarF $ f @@ e
 
-instance (Syntactic b, TypeF (Internal b)) => SugarF (FFF b) where
+instance (Syntactic b, Type (Internal b)) => SugarF (FFF b) where
   type SugarT (FFF b) = Internal b
   sugarF (ce,i) = FFF $ sugar $ ASTF (flattenCSE $ transCSEExpr toAExpr ce) i
 

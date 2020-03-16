@@ -156,8 +156,8 @@ data Expr a where
   Literal  :: LiteralType a          => a -> Expr (Full a)
   Operator ::                           Op a -> Expr a
   Variable ::                           Var a -> Expr (Full a)
-  (:@)     :: ExprCtx a              => Expr (a -> b) -> AExpr a -> Expr b
-  Lambda   :: (ExprCtx a, ExprCtx b) => Var a -> AExpr b -> Expr (Full (a -> b))
+  (:@)     :: TypeF a              => Expr (a -> b) -> AExpr a -> Expr b
+  Lambda   :: (Type a, Type b) => Var a -> AExpr b -> Expr (Full (a -> b))
 
 exprType :: TypeF a => Expr a -> TypeRep a
 exprType _ = typeRepF
@@ -335,7 +335,7 @@ data Op a where
 
     -- | MutableToPure
     RunMutableArray :: Type a => Op (Mut (MArr a) :-> Full [a])
-    WithArray       :: (Type a, Type b) => Op (MArr a :-> ([a] -> Mut b) :-> Full (Mut b))
+    WithArray       :: Type b => Op (MArr a :-> ([a] -> Mut b) :-> Full (Mut b))
 
     -- | MutableReference
     NewRef :: Type a => Op (a :-> Full (Mut (IORef a)))
@@ -447,7 +447,7 @@ data Op a where
 
     -- | Mutable
     Return :: (Monad m, Size (m a) ~ Size a)         => Op (a    :-> Full (m a))
-    Bind   :: (Monad m, Size (m a) ~ Size a, Type a) => Op (m a  :-> (a -> m b) :-> Full (m b))
+    Bind   :: (Monad m, Size (m a) ~ Size a) => Op (m a  :-> (a -> m b) :-> Full (m b))
     Then   :: Monad m                                => Op (m a  :-> m b        :-> Full (m b))
     When   :: Monad m                                => Op (Bool :-> m ()       :-> Full (m ()))
 
@@ -488,7 +488,7 @@ viSet v = S.singleton $ varNum v
 
 
 data CBind where
-  CBind :: (ExprCtx a) => Var a -> AExpr a -> CBind
+  CBind :: Type a => Var a -> AExpr a -> CBind
 
 instance Eq CBind where
   CBind (v1 :: Var a) e1 == CBind (v2 :: Var b) e2
@@ -507,7 +507,7 @@ fviB (CBind _ e) = fvi e
 
 showRhs (CBind _ e) = show e
 
-mkLets :: ExprCtx a => ([CBind], AExpr a) -> AExpr a
+mkLets :: Type a => ([CBind], AExpr a) -> AExpr a
 mkLets (CBind v rhs : bs, e) = aeInfo e :& Operator Let :@ rhs :@ (funInfo rhs e :& Lambda v (mkLets (bs,e)))
 mkLets ([], e) = e
 
@@ -527,7 +527,7 @@ extendBE :: BindEnv -> CBind -> BindEnv
 extendBE bm b = M.insert (bvId b) b bm
 
 -- | Expressions that can and should be shared
-sharable :: TypeF a => AExpr a -> Bool
+sharable :: Type a => AExpr a -> Bool
 sharable e = legalToShare e && goodToShare e
 
 -- | Expressions that can be shared without breaking fromCore
@@ -576,7 +576,7 @@ shOp _ = True
 
 -- | Expressions that are expensive enough to be worth sharing
 goodToShare :: TypeF a => AExpr a -> Bool
-goodToShare (_ :& Literal (l :: a)) = largeLit (typeRepF :: TypeRep a) l
+goodToShare (_ :& Literal (l :: a)) = largeLit (typeRep :: TypeRep a) l
 -- The case below avoids constructing a let-binding for an array stored
 -- in a tuple. This is beneficial because the select operator is order
 -- of magnitudes cheaper than the array copy generated for the let-binding.

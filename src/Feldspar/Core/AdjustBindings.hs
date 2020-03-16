@@ -38,19 +38,20 @@
 module Feldspar.Core.AdjustBindings (adjustBindings) where
 
 import Feldspar.Core.Representation
+import Feldspar.Core.Types (Type(..))
 
-adjustBindings :: ExprCtx a => AExpr a -> AExpr a
+adjustBindings :: Type a => AExpr a -> AExpr a
 adjustBindings e = adjA e
 
-adjA :: ExprCtx a => AExpr a -> AExpr a
+adjA :: TypeF a => AExpr a -> AExpr a
 adjA (i :& e) = i :& adj e
 
-adj :: ExprCtx a => Expr a -> Expr a
+adj :: TypeF a => Expr a -> Expr a
 adj (Lambda v e) = Lambda v $ adjB [] e
 adj (f :@ e) = adj f :@ adjA e
 adj e = e
 
-adjB :: ExprCtx a => [CBind] -> AExpr a -> AExpr a
+adjB :: Type a => [CBind] -> AExpr a -> AExpr a
 adjB bs (_ :& Operator Let :@ a :@ (_ :& Lambda v e)) = adjB (CBind v (adjA a) : bs) e
 adjB bs (i :& Lambda v e) = i :& Lambda v (adjB bs e)
 adjB bs e = mkLets (reverse bs, adjA e)
